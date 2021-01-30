@@ -65,8 +65,8 @@ class CollectionMaster_OT_run(Operator):
                     collection.hide_viewport = False
                 else:            
                     collection.hide_viewport = True
-
-                collection.color_tag = 'COLOR_03'                 
+                if pref.collection_color:
+                    collection.color_tag = 'COLOR_03'                 
                 print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
 
         
@@ -87,13 +87,18 @@ class CollectionMasterPreferences(AddonPreferences):
         name="Show Button Text",
         description="When enabled the Header Button will Show A Text",
         default=True)
+        
+    collection_color: BoolProperty(
+        name="collection_color",
+        description="change collection_color",
+        default=True)
     
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
         layout.prop(self, 'button_text') 
-        layout.prop(self, 'collection_prefix') 
-        #layout.prop(self, 'color_tags') 
+        layout.prop(self, 'collection_color') 
+        layout.prop(self, 'collection_prefix')
         
 
 
