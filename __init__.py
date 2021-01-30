@@ -18,19 +18,19 @@
 
 import bpy
 from bpy.types import AddonPreferences, Operator
-from bpy.props import BoolProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty
 
 
 bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (2, 83, 0),
     "location": "TopBar",
     "category": "System",
-    "wiki_url": "",
-    "tracker_url": "",
+    "wiki_url": "https://github.com/kromar/blender_CollectionMaster",
+    "tracker_url": "https://github.com/kromar/blender_CollectionMaster/issues",
 }
 
 
@@ -43,9 +43,9 @@ def draw_button(self, context):
         row = layout.row(align=True)
             
         if pref.button_text:
-            row.operator(operator="scene.collection_master", text="CM", icon='COLLECTION_COLOR_07', emboss=True, depress=False)
+            row.operator(operator="scene.collection_master", text=pref.collection_prefix, icon='COLLECTION_COLOR_03', emboss=True, depress=False)
         else:
-            row.operator(operator="scene.collection_master", text="", icon='COLLECTION_COLOR_07', emboss=True, depress=False)
+            row.operator(operator="scene.collection_master", text="", icon='COLLECTION_COLOR_03', emboss=True, depress=False)
 
 
 class CollectionMaster_OT_run(Operator):
@@ -58,14 +58,17 @@ class CollectionMaster_OT_run(Operator):
     def execute(self, context):        
         pref = context.preferences.addons[__package__.split(".")[0]].preferences
 
-        for collection in bpy.data.collections:
-            if pref.collection_prefix in collection.name:
+        for collection in bpy.data.collections:            
+            prefix = pref.collection_prefix.replace(",", " ").split() # breaks response into words
+            if any(collection.name.startswith(s) for s in prefix):
                 if collection.hide_viewport:
                     collection.hide_viewport = False
                 else:            
                     collection.hide_viewport = True
-                    
-                print(collection.name, collection.hide_viewport)
+
+                collection.color_tag = 'COLOR_03'                 
+                print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+
         
         return{'FINISHED'}
 
@@ -84,13 +87,14 @@ class CollectionMasterPreferences(AddonPreferences):
         name="Show Button Text",
         description="When enabled the Header Button will Show A Text",
         default=True)
-
-
+    
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
         layout.prop(self, 'button_text') 
         layout.prop(self, 'collection_prefix') 
+        #layout.prop(self, 'color_tags') 
+        
 
 
 classes = (
