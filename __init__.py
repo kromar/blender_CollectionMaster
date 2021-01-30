@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.types import AddonPreferences, Operator
+from bpy.types import AddonPreferences, Operator, Panel
 from bpy.props import BoolProperty, StringProperty, EnumProperty
 
 
@@ -34,19 +34,18 @@ bl_info = {
 }
 
 
-def draw_button(self, context):
-    pref = bpy.context.preferences.addons[__package__.split(".")[0]].preferences    
-    
+class CM_PT_CollectionMaster(Panel):    
+    bl_label = 'Collection Master'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'CoMa'
 
-    if context.region.alignment == 'RIGHT':
-        layout = self.layout
-        row = layout.row(align=True)
+    def draw(self, context):
+        pref = context.preferences.addons[__package__.split(".")[0]].preferences 
+        
+        layout = self.layout           
+        layout.operator(operator="scene.collection_master", text=pref.collection_prefix, icon='COLLECTION_COLOR_03', emboss=True, depress=False)
             
-        if pref.button_text:
-            row.operator(operator="scene.collection_master", text=pref.collection_prefix, icon='COLLECTION_COLOR_03', emboss=True, depress=False)
-        else:
-            row.operator(operator="scene.collection_master", text="", icon='COLLECTION_COLOR_03', emboss=True, depress=False)
-
 
 class CollectionMaster_OT_run(Operator):
     bl_idname = "scene.collection_master"
@@ -60,6 +59,7 @@ class CollectionMaster_OT_run(Operator):
 
         for collection in bpy.data.collections:            
             prefix = pref.collection_prefix.replace(",", " ").split() # breaks response into words
+           
             if any(collection.name.startswith(s) for s in prefix):
                 if collection.hide_viewport:
                     collection.hide_viewport = False
@@ -81,12 +81,8 @@ class CollectionMasterPreferences(AddonPreferences):
         name="collection_prefix", 
         description="collection_prefix", 
         subtype='NONE',
-        default="Physics_") 
-
-    button_text: BoolProperty(
-        name="Show Button Text",
-        description="When enabled the Header Button will Show A Text",
-        default=True)
+        default="Physics_",
+        update=CM_PT_CollectionMaster.draw) 
         
     collection_color: BoolProperty(
         name="collection_color",
@@ -96,7 +92,6 @@ class CollectionMasterPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
-        layout.prop(self, 'button_text') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
         
@@ -104,18 +99,15 @@ class CollectionMasterPreferences(AddonPreferences):
 
 classes = (
     CollectionMaster_OT_run,
+    CM_PT_CollectionMaster,
     CollectionMasterPreferences,
     )
 
-def register():
-    
-    for c in classes:
-        bpy.utils.register_class(c)   
-    bpy.types.TOPBAR_HT_upper_bar.prepend(draw_button)
+def register():    
+    [bpy.utils.register_class(c) for c in classes]
 
 
 def unregister():
-    bpy.types.TOPBAR_HT_upper_bar.remove(draw_button)
     [bpy.utils.unregister_class(c) for c in classes]
 
 if __name__ == "__main__":
