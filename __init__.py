@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 1, 0),
+    "version": (1, 2, 0),
     "blender": (2, 83, 0),
     "location": "TopBar",
     "category": "System",
@@ -41,32 +41,34 @@ class CM_PT_CollectionMaster(Panel):
     bl_category = 'CoMa'
 
     def draw(self, context):
-        pref = context.preferences.addons[__package__.split(".")[0]].preferences 
-        
-        layout = self.layout           
-        layout.operator(operator="scene.collection_master", text=pref.collection_prefix, icon='COLLECTION_COLOR_03', emboss=True, depress=False)
-            
+        pref = context.preferences.addons[__package__.split(".")[0]].preferences         
+        prefix = pref.collection_prefix.replace(",", " ").split()        
+        layout = self.layout    
+        for i in prefix:
+            if not pref.collection_color == 'NONE':            
+                layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + pref.collection_color, emboss=True, depress=False).button_input=i
+            else:    
+                layout.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
+
 
 class CollectionMaster_OT_run(Operator):
     bl_idname = "scene.collection_master"
     bl_label = "collection_master"
     bl_description = "toggle visibility of physics collections"
     
-
+    button_input: StringProperty()
 
     def execute(self, context):        
         pref = context.preferences.addons[__package__.split(".")[0]].preferences
-
-        for collection in bpy.data.collections:            
-            prefix = pref.collection_prefix.replace(",", " ").split() # breaks response into words
-           
-            if any(collection.name.startswith(s) for s in prefix):
+        print("button_input", self.button_input)
+        for collection in bpy.data.collections:  
+            if collection.name.startswith(self.button_input):
                 if collection.hide_viewport:
                     collection.hide_viewport = False
                 else:            
                     collection.hide_viewport = True
-                if pref.collection_color:
-                    collection.color_tag = 'COLOR_03'                 
+                if pref.use_color and pref.collection_color:
+                    collection.color_tag = pref.collection_color                
                 print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
 
         
@@ -84,14 +86,34 @@ class CollectionMasterPreferences(AddonPreferences):
         default="Physics_",
         update=CM_PT_CollectionMaster.draw) 
         
-    collection_color: BoolProperty(
-        name="collection_color",
-        description="change collection_color",
+    use_color: BoolProperty(
+        name="use_color",
+        description="change use_color",
         default=True)
+
+    def list_populate(self, context):
+        colors = [('NONE', '', '', 'OUTLINER_COLLECTION', 0), 
+                    ('COLOR_01', '','', 'COLLECTION_COLOR_01', 1), 
+                    ('COLOR_02', '','', 'COLLECTION_COLOR_02', 2), 
+                    ('COLOR_03', '','', 'COLLECTION_COLOR_03', 3), 
+                    ('COLOR_04', '','', 'COLLECTION_COLOR_04', 4), 
+                    ('COLOR_05', '','', 'COLLECTION_COLOR_05', 5), 
+                    ('COLOR_06', '','', 'COLLECTION_COLOR_06', 6),
+                    ('COLOR_07', '','', 'COLLECTION_COLOR_07', 7), 
+                    ('COLOR_08', '','', 'COLLECTION_COLOR_08', 8), 
+                ]
+        return colors
+
+    collection_color: EnumProperty(
+        items=list_populate,
+        name="collection_color", 
+        description="collection_color")
+        
     
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
+        layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
         
