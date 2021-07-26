@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 0),
+    "version": (1, 2, 1),
     "blender": (2, 83, 0),
     "location": "TopBar",
     "category": "System",
@@ -34,19 +34,23 @@ bl_info = {
 }
 
 
+def prefs():
+    ''' load addon preferences to reference in code'''
+    user_preferences = bpy.context.preferences
+    return user_preferences.addons[__package__].preferences 
+
 class CM_PT_CollectionMaster(Panel):    
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'CoMa'
 
-    def draw(self, context):
-        pref = context.preferences.addons[__package__.split(".")[0]].preferences         
-        prefix = pref.collection_prefix.replace(",", " ").split()        
+    def draw(self, context):       
+        prefix = prefs().collection_prefix.replace(",", " ").split()        
         layout = self.layout    
         for i in prefix:
-            if not pref.collection_color == 'NONE':            
-                layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + pref.collection_color, emboss=True, depress=False).button_input=i
+            if not prefs().collection_color == 'NONE':            
+                layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
             else:    
                 layout.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
 
@@ -57,22 +61,33 @@ class CollectionMaster_OT_run(Operator):
     bl_description = "toggle visibility of physics collections"
     
     button_input: StringProperty()
+    collection_visible: BoolProperty(
+        name="collection_visible",
+        description="collection_visible",
+        default=False)
 
     def execute(self, context):        
-        pref = context.preferences.addons[__package__.split(".")[0]].preferences
         print("button_input", self.button_input)
+        if self.collection_visible:
+            self.collection_visible = False
+        else:
+            self.collection_visible = True  
+        self.toggle_visibilty(self.collection_visible)    
+
+        return{'FINISHED'}
+    
+    def toggle_visibilty(self, visible=False):        
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input):
-                if collection.hide_viewport:
-                    collection.hide_viewport = False
-                else:            
-                    collection.hide_viewport = True
-                if pref.use_color and pref.collection_color:
-                    collection.color_tag = pref.collection_color                
-                print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+                collection.hide_viewport = visible   
 
-        
+                #change collection icon color
+                if prefs().use_color and prefs().collection_color:
+                    collection.color_tag = prefs().collection_color                
+                print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+    
         return{'FINISHED'}
+        
 
 
 
