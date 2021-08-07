@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 1),
+    "version": (1, 2, 2),
     "blender": (2, 83, 0),
     "location": "TopBar",
     "category": "System",
@@ -61,31 +61,79 @@ class CollectionMaster_OT_run(Operator):
     bl_description = "toggle visibility of physics collections"
     
     button_input: StringProperty()
-    collection_visible: BoolProperty(
+        
+    item_enabled: BoolProperty(
+        name="collection_enabled",
+        description="collection_enabled",
+        default=False)
+
+    item_visible: BoolProperty(
         name="collection_visible",
         description="collection_visible",
         default=False)
 
     def execute(self, context):        
-        print("button_input", self.button_input)
-        if self.collection_visible:
-            self.collection_visible = False
-        else:
-            self.collection_visible = True  
-        self.toggle_visibilty(self.collection_visible)    
+        #print("CoMa button_input: ", self.button_input)
+
+        if prefs().disable_in_viewport:
+            if self.item_enabled:
+                self.item_enabled = False
+            else:
+                self.item_enabled = True  
+            self.toggle_viewport(self.item_enabled)    
+
+        if prefs().hide_in_viewport:
+            if self.item_visible:
+                self.item_visible = False
+            else:
+                self.item_visible = True  
+            self.toggle_visibilty(self.item_visible)  
 
         return{'FINISHED'}
     
-    def toggle_visibilty(self, visible=False):        
+      
+    def toggle_viewport(self, state=False):        
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input):
-                collection.hide_viewport = visible   
-
+                collection.hide_viewport = state
+                print(collection.name)
+                
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
                 print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
-    
+
+        return{'FINISHED'}
+
+
+    def toggle_visibilty(self, state=False):    
+
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+        
+        #toggle obejcts
+        for ob in vlayer.objects:            
+            if ob.name.startswith(self.button_input):
+                ob.hide_set(state)
+
+        #toggle collections
+
+            for layer in vlayer.layer_collection.children:  
+                print(layer.name)          
+                if layer.name.startswith(self.button_input):
+                    layer.hide_viewport = state
+
+                
+                if layer.children:
+                    def follow_collection(collection):
+                        for layer in collection.children: 
+                            if layer.name.startswith(self.button_input):
+                                layer.hide_viewport = state
+                            if layer.children:
+                                print(layer.children)
+                                follow_collection(layer)
+
+
         return{'FINISHED'}
         
 
@@ -98,13 +146,24 @@ class CollectionMasterPreferences(AddonPreferences):
         name="collection_prefix", 
         description="collection_prefix", 
         subtype='NONE',
-        default="Physics_",
+        default="Physics_, BL_",
         update=CM_PT_CollectionMaster.draw) 
         
     use_color: BoolProperty(
         name="use_color",
         description="change use_color",
         default=True)
+
+    disable_in_viewport: BoolProperty(
+        name="disable_in_viewport",
+        description="disable_in_viewport",
+        default=False)
+        
+    hide_in_viewport: BoolProperty(
+        name="hide_in_viewport",
+        description="hide_in_viewport",
+        default=True)
+    
 
     def list_populate(self, context):
         colors = [('NONE', '', '', 'OUTLINER_COLLECTION', 0), 
@@ -128,6 +187,8 @@ class CollectionMasterPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
+        layout.prop(self, 'disable_in_viewport')
+        layout.prop(self, 'hide_in_viewport')
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
