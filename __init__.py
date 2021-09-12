@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 3),
+    "version": (1, 2, 4),
     "blender": (2, 83, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
@@ -67,19 +67,48 @@ class CollectionMaster_OT_run(Operator):
         description="collection_enabled",
         default=False)
 
+    item_rendered: BoolProperty(
+        name="collection_rendered",
+        description="collection_rendered",
+        default=False)
+
+    item_select: BoolProperty(
+        name="collection_select",
+        description="collection_select",
+        default=False)
+
     item_visible: BoolProperty(
         name="collection_visible",
         description="collection_visible",
         default=False)
+        
+    item_excluded: BoolProperty(
+        name="collection_excluded",
+        description="collection_excluded",
+        default=False)
 
     def execute(self, context):        
-        #print("Collection Master button_input: ", self.button_input)
+        #print("Collection Master button_input: ", self.button_input)            
         if prefs().disable_in_viewport:
             if self.item_enabled:
                 self.item_enabled = False
             else:
                 self.item_enabled = True  
-            self.toggle_viewport(self.item_enabled)    
+            self.toggle_viewport(self.item_enabled)
+            
+        if prefs().render_in_viewport:
+            if self.item_rendered:
+                self.item_rendered = False
+            else:
+                self.item_rendered = True  
+            self.render_viewport(self.item_rendered)    
+        
+        if prefs().select_in_viewport:
+            if self.item_select:
+                self.item_select = False
+            else:
+                self.item_select = True  
+            self.select_viewport(self.item_select)    
 
         if prefs().hide_in_viewport:
             if self.item_visible:
@@ -87,6 +116,13 @@ class CollectionMaster_OT_run(Operator):
             else:
                 self.item_visible = True  
             self.toggle_visibilty(self.item_visible)  
+        
+        if prefs().exclude_in_viewport:
+            if self.item_excluded:
+                self.item_excluded = False
+            else:
+                self.item_excluded = True  
+            self.exclude_viewport(self.item_excluded)    
 
         return{'FINISHED'}
     
@@ -101,6 +137,61 @@ class CollectionMaster_OT_run(Operator):
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
                 print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+
+        return{'FINISHED'}
+
+        
+    def select_viewport(self, state=False):        
+        for collection in bpy.data.collections:  
+            if collection.name.startswith(self.button_input):
+                collection.hide_select = state
+                print(collection.name)
+                
+                #change collection icon color
+                if prefs().use_color and prefs().collection_color:
+                    collection.color_tag = prefs().collection_color                
+                print("Collection: ", collection.name, "Hide: ", collection.hide_select)
+
+        return{'FINISHED'}
+
+        
+    def render_viewport(self, state=False):        
+        for collection in bpy.data.collections:  
+            if collection.name.startswith(self.button_input):
+                collection.hide_render = state
+                print(collection.name)
+                
+                #change collection icon color
+                if prefs().use_color and prefs().collection_color:
+                    collection.color_tag = prefs().collection_color                
+                print("Collection: ", collection.name, "Hide: ", collection.hide_render)
+
+        return{'FINISHED'}
+
+
+    def exclude_viewport(self, state=False):           
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+        
+        #toggle obejcts
+        for ob in vlayer.objects:            
+            if ob.name.startswith(self.button_input):
+                ob.hide_set(state)
+
+        #toggle collections
+            for layer in vlayer.layer_collection.children:  
+                print(layer.name)          
+                if layer.name.startswith(self.button_input):
+                    layer.exclude = state
+                
+                if layer.children:
+                    def follow_collection(collection):
+                        for layer in collection.children: 
+                            if layer.name.startswith(self.button_input):
+                                layer.exclude = state
+                            if layer.children:
+                                print(layer.children)
+                                follow_collection(layer)
 
         return{'FINISHED'}
 
@@ -128,12 +219,13 @@ class CollectionMaster_OT_run(Operator):
                             if layer.children:
                                 print(layer.children)
                                 follow_collection(layer)
-
         return{'FINISHED'}
+
         
 panels = (
         VIEW3D_PT_CollectionMaster,
         )
+
 
 def update_panel(self, context):
     message = ": Updating Panel locations has failed"
@@ -181,9 +273,24 @@ class CollectionMasterPreferences(AddonPreferences):
         description="disable_in_viewport",
         default=False)
         
+    select_in_viewport: BoolProperty(
+        name="select_in_viewport",
+        description="select_in_viewport",
+        default=False)
+
+    render_in_viewport: BoolProperty(
+        name="render_in_viewport",
+        description="render_in_viewport",
+        default=False)
+        
     hide_in_viewport: BoolProperty(
         name="hide_in_viewport",
         description="hide_in_viewport",
+        default=True)        
+        
+    exclude_in_viewport: BoolProperty(
+        name="exclude_in_viewport",
+        description="exclude_in_viewport",
         default=True)
     
 
@@ -203,8 +310,7 @@ class CollectionMasterPreferences(AddonPreferences):
     collection_color: EnumProperty(
         items=list_populate,
         name="collection_color", 
-        description="collection_color")
-        
+        description="collection_color")        
     
 
     def draw(self, context):
@@ -212,11 +318,13 @@ class CollectionMasterPreferences(AddonPreferences):
         layout.use_property_split = True 
         layout.prop(self, 'disable_in_viewport')
         layout.prop(self, 'hide_in_viewport')
+        layout.prop(self, 'select_in_viewport')
+        layout.prop(self, 'exclude_in_viewport')
+        layout.prop(self, 'render_in_viewport')
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
-        layout.prop(self, "category", text="Tab Category")
-        
+        layout.prop(self, "category", text="Tab Category")        
 
 
 classes = (
