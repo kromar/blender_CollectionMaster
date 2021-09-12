@@ -27,7 +27,7 @@ bl_info = {
     "author": "Daniel Grauer",
     "version": (1, 2, 3),
     "blender": (2, 83, 0),
-    "location": "View3D > Sidebar > CoMa",
+    "location": "View3D > Sidebar > Collection Master",
     "category": "System",
     "wiki_url": "https://github.com/kromar/blender_CollectionMaster",
     "tracker_url": "https://github.com/kromar/blender_CollectionMaster/issues",
@@ -44,7 +44,7 @@ class VIEW3D_PT_CollectionMaster(Panel):
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'CoMa'
+    bl_category = 'Collection Master'
 
     def draw(self, context):             
         layout = self.layout        
@@ -73,7 +73,7 @@ class CollectionMaster_OT_run(Operator):
         default=False)
 
     def execute(self, context):        
-        #print("CoMa button_input: ", self.button_input)
+        #print("Collection Master button_input: ", self.button_input)
         if prefs().disable_in_viewport:
             if self.item_enabled:
                 self.item_enabled = False
@@ -160,7 +160,7 @@ class CollectionMasterPreferences(AddonPreferences):
     category: StringProperty(
             name="Tab Category",
             description="Choose a name for the category of the panel",
-            default="CoMa",
+            default="Collection Master",
             update=update_panel
             )
 
