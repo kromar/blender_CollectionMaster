@@ -25,9 +25,9 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 2),
+    "version": (1, 2, 3),
     "blender": (2, 83, 0),
-    "location": "TopBar",
+    "location": "View3D > Sidebar > CoMa",
     "category": "System",
     "wiki_url": "https://github.com/kromar/blender_CollectionMaster",
     "tracker_url": "https://github.com/kromar/blender_CollectionMaster/issues",
@@ -38,17 +38,17 @@ def prefs():
     ''' load addon preferences to reference in code'''
     user_preferences = bpy.context.preferences
     return user_preferences.addons[__package__].preferences 
+ 
 
-class CM_PT_CollectionMaster(Panel):    
+class VIEW3D_PT_CollectionMaster(Panel):    
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'CoMa'
 
-    def draw(self, context):       
-        prefix = prefs().collection_prefix.replace(",", " ").split()        
-        layout = self.layout    
-        for i in prefix:
+    def draw(self, context):             
+        layout = self.layout        
+        for i in prefs().collection_prefix.replace(",", " ").split():
             if not prefs().collection_color == 'NONE':            
                 layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
             else:    
@@ -74,7 +74,6 @@ class CollectionMaster_OT_run(Operator):
 
     def execute(self, context):        
         #print("CoMa button_input: ", self.button_input)
-
         if prefs().disable_in_viewport:
             if self.item_enabled:
                 self.item_enabled = False
@@ -107,7 +106,6 @@ class CollectionMaster_OT_run(Operator):
 
 
     def toggle_visibilty(self, state=False):    
-
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
         
@@ -117,12 +115,10 @@ class CollectionMaster_OT_run(Operator):
                 ob.hide_set(state)
 
         #toggle collections
-
             for layer in vlayer.layer_collection.children:  
                 print(layer.name)          
                 if layer.name.startswith(self.button_input):
                     layer.hide_viewport = state
-
                 
                 if layer.children:
                     def follow_collection(collection):
@@ -133,21 +129,47 @@ class CollectionMaster_OT_run(Operator):
                                 print(layer.children)
                                 follow_collection(layer)
 
-
         return{'FINISHED'}
         
+panels = (
+        VIEW3D_PT_CollectionMaster,
+        )
 
+def update_panel(self, context):
+    message = ": Updating Panel locations has failed"
+    try:
+        for panel in panels:
+            if "bl_rna" in panel.__dict__:
+                bpy.utils.unregister_class(panel)
+
+        for panel in panels:
+            panel.bl_category = prefs().category
+            bpy.utils.register_class(panel)
+
+    except Exception as e:
+        print("\n[{}]\n{}\n\nError:\n{}".format(__package__, message, e))
+        pass
 
 
 class CollectionMasterPreferences(AddonPreferences):
-    bl_idname = __package__
+    #bl_idname = __package__
+    # this must match the addon name, use '__package__'
+    # when defining this in a submodule of a python package.
+    bl_idname = __name__
+
+    category: StringProperty(
+            name="Tab Category",
+            description="Choose a name for the category of the panel",
+            default="CoMa",
+            update=update_panel
+            )
 
     collection_prefix: StringProperty(
         name="collection_prefix", 
         description="collection_prefix", 
         subtype='NONE',
         default="Physics_, BL_",
-        update=CM_PT_CollectionMaster.draw) 
+        update=VIEW3D_PT_CollectionMaster.draw) 
         
     use_color: BoolProperty(
         name="use_color",
@@ -184,6 +206,7 @@ class CollectionMasterPreferences(AddonPreferences):
         description="collection_color")
         
     
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
@@ -192,17 +215,19 @@ class CollectionMasterPreferences(AddonPreferences):
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
+        layout.prop(self, "category", text="Tab Category")
         
 
 
 classes = (
     CollectionMaster_OT_run,
-    CM_PT_CollectionMaster,
+    VIEW3D_PT_CollectionMaster,
     CollectionMasterPreferences,
     )
 
 def register():    
     [bpy.utils.register_class(c) for c in classes]
+    update_panel(None, bpy.context)
 
 
 def unregister():
