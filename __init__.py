@@ -93,37 +93,37 @@ class CollectionMaster_OT_run(Operator):
         if self.button_input == 'ENABLE_ALL': 
             print('ENABLE_ALL')
             state = False
-            for collection in bpy.data.collections:  
-                collection.hide_viewport = state
-                collection.hide_select = state
-                collection.hide_render = state
-
-            active_layer = bpy.context.view_layer.name
-            vlayer = bpy.context.scene.view_layers[active_layer]
-            for ob in vlayer.objects:            
-                ob.hide_set(state)
-            
-                for layer in vlayer.layer_collection.children:        
-                    layer.exclude = state       
-                    layer.hide_viewport = state
-                    
-                    if layer.children:
-                        def follow_collection(collection):
-                            for layer in collection.children: 
-                                layer.exclude = state
-                                layer.hide_viewport = state
-                                if layer.children:
-                                    follow_collection(layer)
-
             for ob in bpy.data.objects:
                 ob.hide_set(state)
                 ob.hide_viewport = state
                 ob.hide_select = state
                 ob.hide_render = state
+            
+            for coll in bpy.data.collections:
+                coll.hide_viewport = state
+                coll.hide_select = state
+                coll.hide_render = state   
 
+            active_layer = bpy.context.view_layer.name
+            vlayer = bpy.context.scene.view_layers[active_layer]
+            for ob in vlayer.objects:            
+                ob.hide_set(state)
+                ob.hide_viewport = state      
+            
+            for layer in vlayer.layer_collection.children:    
+                layer.exclude = state       
+                layer.hide_viewport = state                
 
-
-        
+                def follow_collection(collection):
+                    for layer in collection.children: 
+                        layer.exclude = state
+                        layer.hide_viewport = state
+                        if layer.children:
+                            follow_collection(layer)
+                            
+                if layer.children:
+                    follow_collection(layer)
+       
         else:
             if prefs().disable_in_viewport:
                 if self.item_enabled:
