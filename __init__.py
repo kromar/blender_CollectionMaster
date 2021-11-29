@@ -25,8 +25,8 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 4),
-    "blender": (2, 83, 0),
+    "version": (1, 2, 5),
+    "blender": (2, 93, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
     "wiki_url": "https://github.com/kromar/blender_CollectionMaster",
@@ -47,7 +47,8 @@ class VIEW3D_PT_CollectionMaster(Panel):
     bl_category = 'Collection Master'
 
     def draw(self, context):             
-        layout = self.layout        
+        layout = self.layout      
+        layout.operator(operator="scene.collection_master", text="Enable All", emboss=True, depress=False).button_input='ENABLE_ALL' 
         for i in prefs().collection_prefix.replace(",", " ").split():
             if not prefs().collection_color == 'NONE':            
                 layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
@@ -88,41 +89,76 @@ class CollectionMaster_OT_run(Operator):
         default=False)
 
     def execute(self, context):        
-        #print("Collection Master button_input: ", self.button_input)            
-        if prefs().disable_in_viewport:
-            if self.item_enabled:
-                self.item_enabled = False
-            else:
-                self.item_enabled = True  
-            self.toggle_viewport(self.item_enabled)
-            
-        if prefs().render_in_viewport:
-            if self.item_rendered:
-                self.item_rendered = False
-            else:
-                self.item_rendered = True  
-            self.render_viewport(self.item_rendered)    
-        
-        if prefs().select_in_viewport:
-            if self.item_select:
-                self.item_select = False
-            else:
-                self.item_select = True  
-            self.select_viewport(self.item_select)    
+        #print("Collection Master button_input: ", self.button_input)    
+        if self.button_input == 'ENABLE_ALL': 
+            print('ENABLE_ALL')
+            state = False
+            for collection in bpy.data.collections:  
+                collection.hide_viewport = state
+                collection.hide_select = state
+                collection.hide_render = state
 
-        if prefs().hide_in_viewport:
-            if self.item_visible:
-                self.item_visible = False
-            else:
-                self.item_visible = True  
-            self.toggle_visibilty(self.item_visible)  
+            active_layer = bpy.context.view_layer.name
+            vlayer = bpy.context.scene.view_layers[active_layer]
+            for ob in vlayer.objects:            
+                ob.hide_set(state)
+            
+                for layer in vlayer.layer_collection.children:        
+                    layer.exclude = state       
+                    layer.hide_viewport = state
+                    
+                    if layer.children:
+                        def follow_collection(collection):
+                            for layer in collection.children: 
+                                layer.exclude = state
+                                layer.hide_viewport = state
+                                if layer.children:
+                                    follow_collection(layer)
+
+            for ob in bpy.data.objects:
+                ob.hide_set(state)
+                ob.hide_viewport = state
+                ob.hide_select = state
+                ob.hide_render = state
+
+
+
         
-        if prefs().exclude_in_viewport:
-            if self.item_excluded:
-                self.item_excluded = False
-            else:
-                self.item_excluded = True  
-            self.exclude_viewport(self.item_excluded)    
+        else:
+            if prefs().disable_in_viewport:
+                if self.item_enabled:
+                    self.item_enabled = False
+                else:
+                    self.item_enabled = True  
+                self.toggle_viewport(self.item_enabled)
+                
+            if prefs().render_in_viewport:
+                if self.item_rendered:
+                    self.item_rendered = False
+                else:
+                    self.item_rendered = True  
+                self.render_viewport(self.item_rendered)    
+            
+            if prefs().select_in_viewport:
+                if self.item_select:
+                    self.item_select = False
+                else:
+                    self.item_select = True  
+                self.select_viewport(self.item_select)    
+
+            if prefs().hide_in_viewport:
+                if self.item_visible:
+                    self.item_visible = False
+                else:
+                    self.item_visible = True  
+                self.toggle_visibilty(self.item_visible)  
+            
+            if prefs().exclude_in_viewport:
+                if self.item_excluded:
+                    self.item_excluded = False
+                else:
+                    self.item_excluded = True  
+                self.exclude_viewport(self.item_excluded)    
 
         return{'FINISHED'}
     
