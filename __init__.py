@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 5),
+    "version": (1, 2, 6),
     "blender": (2, 93, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
@@ -91,7 +91,8 @@ class CollectionMaster_OT_run(Operator):
     def execute(self, context):        
         #print("Collection Master button_input: ", self.button_input)    
         if self.button_input == 'ENABLE_ALL': 
-            print('ENABLE_ALL')
+            if prefs().debug_output:
+                print('ENABLE_ALL')
             state = False
             for ob in bpy.data.objects:
                 ob.hide_set(state)
@@ -167,12 +168,14 @@ class CollectionMaster_OT_run(Operator):
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input):
                 collection.hide_viewport = state
-                print(collection.name)
+                if prefs().debug_output:
+                    print("toggle: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
-                print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+                if prefs().debug_output:
+                    print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
 
         return{'FINISHED'}
 
@@ -181,12 +184,14 @@ class CollectionMaster_OT_run(Operator):
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input):
                 collection.hide_select = state
-                print(collection.name)
+                if prefs().debug_output:
+                    print("select: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
-                print("Collection: ", collection.name, "Hide: ", collection.hide_select)
+                if prefs().debug_output:
+                    print("Collection: ", collection.name, "Hide: ", collection.hide_select)
 
         return{'FINISHED'}
 
@@ -195,12 +200,14 @@ class CollectionMaster_OT_run(Operator):
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input):
                 collection.hide_render = state
-                print(collection.name)
+                if prefs().debug_output:
+                    print("render: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
-                print("Collection: ", collection.name, "Hide: ", collection.hide_render)
+                if prefs().debug_output:
+                    print("Collection: ", collection.name, "Hide: ", collection.hide_render)
 
         return{'FINISHED'}
 
@@ -213,12 +220,15 @@ class CollectionMaster_OT_run(Operator):
         for ob in vlayer.objects:            
             if ob.name.startswith(self.button_input):
                 ob.hide_set(state)
+                if prefs().debug_output:
+                    print("hide: ", ob.name, self.button_input)  
 
         #toggle collections
-            for layer in vlayer.layer_collection.children:  
-                print(layer.name)          
+            for layer in vlayer.layer_collection.children:    
                 if layer.name.startswith(self.button_input):
                     layer.exclude = state
+                    if prefs().debug_output:
+                        print("exclude: ", layer.name, self.button_input)   
                 
                 if layer.children:
                     def follow_collection(collection):
@@ -226,8 +236,12 @@ class CollectionMaster_OT_run(Operator):
                             if layer.name.startswith(self.button_input):
                                 layer.exclude = state
                             if layer.children:
-                                print(layer.children)
+                                if prefs().debug_output:
+                                    print("exclude children: ", layer.children)
                                 follow_collection(layer)
+                    
+                    follow_collection(layer)
+
 
         return{'FINISHED'}
 
@@ -242,10 +256,11 @@ class CollectionMaster_OT_run(Operator):
                 ob.hide_set(state)
 
         #toggle collections
-            for layer in vlayer.layer_collection.children:  
-                print(layer.name)          
+            for layer in vlayer.layer_collection.children:           
                 if layer.name.startswith(self.button_input):
                     layer.hide_viewport = state
+                    if prefs().debug_output:
+                        print("visibility: ", layer.name) 
                 
                 if layer.children:
                     def follow_collection(collection):
@@ -253,8 +268,11 @@ class CollectionMaster_OT_run(Operator):
                             if layer.name.startswith(self.button_input):
                                 layer.hide_viewport = state
                             if layer.children:
-                                print(layer.children)
-                                follow_collection(layer)
+                                if prefs().debug_output:
+                                    print(layer.children)
+                                follow_collection(layer)                    
+                    follow_collection(layer)
+
         return{'FINISHED'}
 
         
@@ -299,6 +317,11 @@ class CollectionMasterPreferences(AddonPreferences):
         default="Physics_, BL_",
         update=VIEW3D_PT_CollectionMaster.draw) 
         
+    debug_output: BoolProperty(
+        name="debug_output",
+        description="debug_output",
+        default=True)
+
     use_color: BoolProperty(
         name="use_color",
         description="change use_color",
@@ -322,7 +345,7 @@ class CollectionMasterPreferences(AddonPreferences):
     hide_in_viewport: BoolProperty(
         name="hide_in_viewport",
         description="hide_in_viewport",
-        default=True)        
+        default=False)        
         
     exclude_in_viewport: BoolProperty(
         name="exclude_in_viewport",
@@ -352,6 +375,7 @@ class CollectionMasterPreferences(AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True 
+        layout.prop(self, 'debug_output')
         layout.prop(self, 'disable_in_viewport')
         layout.prop(self, 'hide_in_viewport')
         layout.prop(self, 'select_in_viewport')
