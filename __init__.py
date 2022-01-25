@@ -46,14 +46,65 @@ class VIEW3D_PT_CollectionMaster(Panel):
     bl_region_type = 'UI'
     bl_category = 'Collection Master'
 
+           
     def draw(self, context):             
-        layout = self.layout      
-        layout.operator(operator="scene.collection_master", text="Enable All", emboss=True, depress=False).button_input='ENABLE_ALL' 
-        for i in prefs().collection_prefix.replace(",", " ").split():
+        layout = self.layout  
+        column = layout.column(align=True)   
+        #main
+        column.label(text="Restore")
+        row = column.row(align=True)
+        row.operator(operator="scene.collection_master", text="All", emboss=True, depress=False).button_input='ENABLE_ALL' 
+        row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
+        row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
+        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
+        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+                
+        
+        
+        #prefix
+        column.label(text="Prefix")        
+        for i in prefs().collection_prefix.replace(",", " ").split():            
+            row = column.row(align=True)
             if not prefs().collection_color == 'NONE':            
-                layout.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
+                row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
+                
+                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
+                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
             else:    
-                layout.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
+                row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
+                
+                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
+                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+        
+        
+        #sufix
+        column.label(text="Suffix")
+        for i in prefs().collection_sufix.replace(",", " ").split():            
+            row = column.row(align=True)
+            if not prefs().collection_color == 'NONE':            
+                row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
+                
+                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
+                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+            else:    
+                row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
+                
+                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
+                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+
 
 
 class CollectionMaster_OT_run(Operator):
@@ -62,31 +113,28 @@ class CollectionMaster_OT_run(Operator):
     bl_description = "toggle visibility of physics collections"
     
     button_input: StringProperty()
-        
+
+    item_excluded: BoolProperty(
+        name="collection_excluded",
+        description="collection_excluded",
+        default=False)
+    item_select: BoolProperty(
+        name="collection_select",
+        description="collection_select",
+        default=False)
+    item_visible: BoolProperty(
+        name="collection_visible",
+        description="collection_visible",
+        default=False)
     item_enabled: BoolProperty(
         name="collection_enabled",
         description="collection_enabled",
         default=False)
-
     item_rendered: BoolProperty(
         name="collection_rendered",
         description="collection_rendered",
         default=False)
 
-    item_select: BoolProperty(
-        name="collection_select",
-        description="collection_select",
-        default=False)
-
-    item_visible: BoolProperty(
-        name="collection_visible",
-        description="collection_visible",
-        default=False)
-        
-    item_excluded: BoolProperty(
-        name="collection_excluded",
-        description="collection_excluded",
-        default=False)
 
     def execute(self, context):        
         #print("Collection Master button_input: ", self.button_input)    
@@ -166,7 +214,7 @@ class CollectionMaster_OT_run(Operator):
       
     def toggle_viewport(self, state=False):        
         for collection in bpy.data.collections:  
-            if collection.name.startswith(self.button_input):
+            if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_viewport = state
                 if prefs().debug_output:
                     print("toggle: ", collection.name)
@@ -182,7 +230,7 @@ class CollectionMaster_OT_run(Operator):
         
     def select_viewport(self, state=False):        
         for collection in bpy.data.collections:  
-            if collection.name.startswith(self.button_input):
+            if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_select = state
                 if prefs().debug_output:
                     print("select: ", collection.name)
@@ -198,7 +246,7 @@ class CollectionMaster_OT_run(Operator):
         
     def render_viewport(self, state=False):        
         for collection in bpy.data.collections:  
-            if collection.name.startswith(self.button_input):
+            if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_render = state
                 if prefs().debug_output:
                     print("render: ", collection.name)
@@ -219,14 +267,14 @@ class CollectionMaster_OT_run(Operator):
         print("exclude state:", state)
         #toggle obejcts
         for ob in vlayer.objects:            
-            if ob.name.startswith(self.button_input):
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
                 ob.hide_set(state)
                 if prefs().debug_output:
                     print("hide: ", ob.name, self.button_input)  
 
         #toggle collections
             for layer in vlayer.layer_collection.children:    
-                if layer.name.startswith(self.button_input):
+                if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
                     layer.exclude = state
                     if prefs().debug_output:
                         print("exclude: ", layer.name, self.button_input)   
@@ -234,7 +282,7 @@ class CollectionMaster_OT_run(Operator):
                 if layer.children:
                     def follow_collection(collection):
                         for layer in collection.children: 
-                            if layer.name.startswith(self.button_input):
+                            if layer.name.startswith(self.button_input)or layer.name.endswith(self.button_input):
                                 layer.exclude = state
                             if layer.children:
                                 if prefs().debug_output:
@@ -253,12 +301,12 @@ class CollectionMaster_OT_run(Operator):
         
         #toggle obejcts
         for ob in vlayer.objects:            
-            if ob.name.startswith(self.button_input):
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
                 ob.hide_set(state)
 
         #toggle collections
             for layer in vlayer.layer_collection.children:           
-                if layer.name.startswith(self.button_input):
+                if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
                     layer.hide_viewport = state
                     if prefs().debug_output:
                         print("visibility: ", layer.name) 
@@ -266,7 +314,7 @@ class CollectionMaster_OT_run(Operator):
                 if layer.children:
                     def follow_collection(collection):
                         for layer in collection.children: 
-                            if layer.name.startswith(self.button_input):
+                            if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
                                 layer.hide_viewport = state
                             if layer.children:
                                 if prefs().debug_output:
@@ -312,11 +360,18 @@ class CollectionMasterPreferences(AddonPreferences):
             )
 
     collection_prefix: StringProperty(
-        name="collection_prefix", 
+        name="Prefix", 
         description="collection_prefix", 
         subtype='NONE',
         default="Physics_, BL_",
         update=VIEW3D_PT_CollectionMaster.draw) 
+        
+    collection_sufix: StringProperty(
+        name="Sufix", 
+        description="collection_sufix", 
+        subtype='NONE',
+        default="_Physics",
+        update=VIEW3D_PT_CollectionMaster.draw)
         
     debug_output: BoolProperty(
         name="debug_output",
@@ -332,6 +387,8 @@ class CollectionMasterPreferences(AddonPreferences):
         name="use_color",
         description="change use_color",
         default=True)
+
+
 
     disable_in_viewport: BoolProperty(
         name="disable_in_viewport",
@@ -439,6 +496,7 @@ class CollectionMasterPreferences(AddonPreferences):
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
+        layout.prop(self, 'collection_sufix')
         layout.prop(self, "category", text="Tab Category")      
         
         layout.prop(self, 'debug_output') 
