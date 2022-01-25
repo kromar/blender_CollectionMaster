@@ -25,7 +25,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 6),
+    "version": (1, 2, 7),
     "blender": (2, 93, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
@@ -216,6 +216,7 @@ class CollectionMaster_OT_run(Operator):
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
         
+        print("exclude state:", state)
         #toggle obejcts
         for ob in vlayer.objects:            
             if ob.name.startswith(self.button_input):
@@ -320,7 +321,12 @@ class CollectionMasterPreferences(AddonPreferences):
     debug_output: BoolProperty(
         name="debug_output",
         description="debug_output",
-        default=True)
+        default=False)
+        
+    toggle_text: BoolProperty(
+        name="toggle_text",
+        description="toggle_text",
+        default=False)
 
     use_color: BoolProperty(
         name="use_color",
@@ -345,7 +351,7 @@ class CollectionMasterPreferences(AddonPreferences):
     hide_in_viewport: BoolProperty(
         name="hide_in_viewport",
         description="hide_in_viewport",
-        default=False)        
+        default=True)        
         
     exclude_in_viewport: BoolProperty(
         name="exclude_in_viewport",
@@ -374,17 +380,68 @@ class CollectionMasterPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True 
-        layout.prop(self, 'debug_output')
-        layout.prop(self, 'disable_in_viewport')
-        layout.prop(self, 'hide_in_viewport')
-        layout.prop(self, 'select_in_viewport')
-        layout.prop(self, 'exclude_in_viewport')
-        layout.prop(self, 'render_in_viewport')
+        layout.use_property_split = False 
+        row = layout.row(align=True)
+        if self.toggle_text:            
+            if self.exclude_in_viewport:
+                row.prop(self, 'exclude_in_viewport', icon="CHECKBOX_HLT")
+            else: 
+                row.prop(self, 'exclude_in_viewport', icon="CHECKBOX_DEHLT")
+
+            if self.select_in_viewport:
+                row.prop(self, 'select_in_viewport', icon='RESTRICT_SELECT_OFF')
+            else: 
+                row.prop(self, 'select_in_viewport', icon='RESTRICT_SELECT_ON')
+                
+            if self.hide_in_viewport:
+                row.prop(self, 'hide_in_viewport', icon='HIDE_OFF')
+            else:            
+                row.prop(self, 'hide_in_viewport', icon='HIDE_ON')
+
+            if self.disable_in_viewport:
+                row.prop(self, 'disable_in_viewport', icon='RESTRICT_VIEW_OFF')
+            else:
+                row.prop(self, 'disable_in_viewport', icon='RESTRICT_VIEW_ON')
+
+            if self.render_in_viewport:
+                row.prop(self, 'render_in_viewport', icon='RESTRICT_RENDER_OFF')
+            else:            
+                row.prop(self, 'render_in_viewport', icon='RESTRICT_RENDER_ON')
+        
+        else:    
+            if self.exclude_in_viewport:
+                row.prop(self, 'exclude_in_viewport', text='', icon="CHECKBOX_HLT")
+            else: 
+                row.prop(self, 'exclude_in_viewport',  text='', icon="CHECKBOX_DEHLT")
+
+            if self.select_in_viewport:
+                row.prop(self, 'select_in_viewport',  text='', icon='RESTRICT_SELECT_OFF')
+            else: 
+                row.prop(self, 'select_in_viewport',  text='', icon='RESTRICT_SELECT_ON')
+                
+            if self.hide_in_viewport:
+                row.prop(self, 'hide_in_viewport',  text='', icon='HIDE_OFF')
+            else:            
+                row.prop(self, 'hide_in_viewport',  text='', icon='HIDE_ON')
+
+            if self.disable_in_viewport:
+                row.prop(self, 'disable_in_viewport',  text='', icon='RESTRICT_VIEW_OFF')
+            else:
+                row.prop(self, 'disable_in_viewport', text='',  icon='RESTRICT_VIEW_ON')
+
+            if self.render_in_viewport:
+                row.prop(self, 'render_in_viewport',  text='', icon='RESTRICT_RENDER_OFF')
+            else:            
+                row.prop(self, 'render_in_viewport',  text='', icon='RESTRICT_RENDER_ON')
+            
+        layout.prop(self, 'toggle_text')
+
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
-        layout.prop(self, "category", text="Tab Category")        
+        layout.prop(self, "category", text="Tab Category")      
+        
+        layout.prop(self, 'debug_output') 
 
 
 classes = (
