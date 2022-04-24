@@ -53,18 +53,21 @@ class VIEW3D_PT_CollectionMaster(Panel):
         #main
         column.label(text="Restore")
         row = column.row(align=True)
+
         row.operator(operator="scene.collection_master", text="All", emboss=True, depress=False).button_input='ENABLE_ALL' 
-        row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+        """row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
         row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
         row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
         row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered """
+        
                 
         
         
         #prefix
         column.label(text="Prefix")        
-        for i in prefs().collection_prefix.replace(",", " ").split():            
+        for i in prefs().collection_prefix.replace(",", " ").split():   
+
             row = column.row(align=True)
             if not prefs().collection_color == 'NONE':            
                 row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
@@ -304,7 +307,7 @@ class CollectionMaster_OT_run(Operator):
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
                 ob.hide_set(state)
 
-        #toggle collections
+            #toggle collections
             for layer in vlayer.layer_collection.children:           
                 if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
                     layer.hide_viewport = state
@@ -377,6 +380,11 @@ class CollectionMasterPreferences(AddonPreferences):
         name="debug_output",
         description="debug_output",
         default=False)
+        
+    toggle_selected: BoolProperty(
+        name="toggle_selected",
+        description="toggle_selected",
+        default=True)
         
     toggle_text: BoolProperty(
         name="toggle_text",
@@ -493,6 +501,7 @@ class CollectionMasterPreferences(AddonPreferences):
             
         layout.prop(self, 'toggle_text')
 
+        layout.prop(self, 'toggle_selected')
         layout.prop(self, 'use_color') 
         layout.prop(self, 'collection_color') 
         layout.prop(self, 'collection_prefix')
