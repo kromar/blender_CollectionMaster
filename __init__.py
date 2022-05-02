@@ -17,8 +17,9 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.types import AddonPreferences, Operator, Panel
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.types import AddonPreferences, Operator, Panel, PropertyGroup
+from bpy.props import (EnumProperty, StringProperty, BoolProperty,
+                       PointerProperty)
 
 
 bl_info = {
@@ -40,7 +41,7 @@ def prefs():
     return user_preferences.addons[__package__].preferences 
  
 
-class VIEW3D_PT_CollectionMaster(Panel):    
+class VIEW3D_PT_CM(Panel):    
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -48,9 +49,11 @@ class VIEW3D_PT_CollectionMaster(Panel):
 
            
     def draw(self, context):             
-        layout = self.layout  
+        layout = self.layout 
+        settings = context.scene.CM 
         column = layout.column(align=True)   
         #main
+        column.prop(settings, 'selected_only')
         column.label(text="Restore")
         row = column.row(align=True)
 
@@ -72,19 +75,19 @@ class VIEW3D_PT_CollectionMaster(Panel):
             if not prefs().collection_color == 'NONE':            
                 row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                """ row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
                 row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered """
             else:    
                 row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                """ row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
                 row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered """
         
         
         #sufix
@@ -94,23 +97,23 @@ class VIEW3D_PT_CollectionMaster(Panel):
             if not prefs().collection_color == 'NONE':            
                 row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                """  row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
                 row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered """
             else:    
                 row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
+                """ row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
                 row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
                 row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
+                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered """
 
 
 
-class CollectionMaster_OT_run(Operator):
+class CM_OT_run(Operator):
     bl_idname = "scene.collection_master"
     bl_label = "collection_master"
     bl_description = "toggle visibility of physics collections"
@@ -329,7 +332,7 @@ class CollectionMaster_OT_run(Operator):
 
         
 panels = (
-        VIEW3D_PT_CollectionMaster,
+        VIEW3D_PT_CM,
         )
 
 
@@ -349,7 +352,7 @@ def update_panel(self, context):
         pass
 
 
-class CollectionMasterPreferences(AddonPreferences):
+class CM_Preferences(AddonPreferences):
     #bl_idname = __package__
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
@@ -367,14 +370,14 @@ class CollectionMasterPreferences(AddonPreferences):
         description="collection_prefix", 
         subtype='NONE',
         default="Physics_, BL_",
-        update=VIEW3D_PT_CollectionMaster.draw) 
+        update=VIEW3D_PT_CM.draw) 
         
     collection_sufix: StringProperty(
         name="Sufix", 
         description="collection_sufix", 
         subtype='NONE',
         default="_Physics",
-        update=VIEW3D_PT_CollectionMaster.draw)
+        update=VIEW3D_PT_CM.draw)
         
     debug_output: BoolProperty(
         name="debug_output",
@@ -510,19 +513,31 @@ class CollectionMasterPreferences(AddonPreferences):
         
         layout.prop(self, 'debug_output') 
 
+class CM_PG_Settings(PropertyGroup):
+    """General Settings and UI data."""
+
+    selected_only: BoolProperty(
+        name="selected_only",
+        description="selected_only",
+        default=True)
+
+
 
 classes = (
-    CollectionMaster_OT_run,
-    VIEW3D_PT_CollectionMaster,
-    CollectionMasterPreferences,
+    CM_PG_Settings,
+    CM_OT_run,
+    VIEW3D_PT_CM,
+    CM_Preferences,
     )
 
 def register():    
     [bpy.utils.register_class(c) for c in classes]
+    bpy.types.Scene.CM = PointerProperty(type=CM_PG_Settings)
     update_panel(None, bpy.context)
 
 
 def unregister():
+    del bpy.types.Scene.CM
     [bpy.utils.unregister_class(c) for c in classes]
 
 if __name__ == "__main__":
