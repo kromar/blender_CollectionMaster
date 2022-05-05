@@ -26,7 +26,7 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 8),
+    "version": (1, 2, 9),
     "blender": (2, 93, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
