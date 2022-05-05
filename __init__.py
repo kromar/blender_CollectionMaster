@@ -40,6 +40,14 @@ def prefs():
     user_preferences = bpy.context.preferences
     return user_preferences.addons[__package__].preferences 
  
+def find_selected():
+
+    print("\n", bpy.context.collection.name)
+    for col in bpy.context.collection.children_recursive:
+        print(col.name)
+        
+    for ob in bpy.context.collection.all_objects:
+        print(ob.name) 
 
 class VIEW3D_PT_CM(Panel):    
     bl_label = 'Collection Master'
