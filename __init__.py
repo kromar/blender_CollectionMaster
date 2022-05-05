@@ -137,7 +137,7 @@ class CM_OT_run(Operator):
     bl_label = "collection_master"
     bl_description = "toggle visibility of physics collections"
     button_input: StringProperty()
-    status: BoolProperty(default=False)
+    status: BoolProperty()
 
     def execute(self, context):   
         settings = context.scene.CM    
@@ -224,13 +224,6 @@ class CM_OT_run(Operator):
     def toggle_exclude(self, status=False):           
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
-        
-        #toggle obejcts
-        for ob in vlayer.objects:           
-            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
-                ob.hide_set(status)
-                if prefs().debug_output:
-                    print("hide: ", ob.name, self.button_input)  
 
         #toggle collections
         for layer in vlayer.layer_collection.children:    
@@ -254,36 +247,48 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
     
-    def toggle_select(self, status=False):        
+    def toggle_select(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+        
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_select = status
+                if prefs().debug_output:
+                    print("toggle_select: ", ob.name, self.button_input)  
+
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_select = status
                 if prefs().debug_output:
-                    print("select: ", collection.name)
+                    print("toggle_select: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
                 if prefs().debug_output:
-                    print("Collection: ", collection.name, "Hide: ", collection.hide_select)
+                    print("Collection: ", collection.name, "toggle_select: ", collection.hide_select)
 
         return{'FINISHED'}
 
-    def toggle_visibilty(self, status=False):    
+    def toggle_visibilty(self, status=False): 
         active_layer = bpy.context.view_layer.name
-        vlayer = bpy.context.scene.view_layers[active_layer]
-        
-        #toggle obejcts
+        vlayer = bpy.context.scene.view_layers[active_layer]   
+
+        #toggle obejcts        
         for ob in vlayer.objects:            
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
                 ob.hide_set(status)
+                if prefs().debug_output:
+                    print("toggle_visibilty: ", ob.name, self.button_input)
 
         #toggle collections
         for layer in vlayer.layer_collection.children:           
             if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
                 layer.hide_viewport = status
                 if prefs().debug_output:
-                    print("visibility: ", layer.name) 
+                    print("toggle_visibilty: ", layer.name) 
             
             if layer.children:
                 def follow_collection(collection):
@@ -298,27 +303,47 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
       
-    def toggle_enable(self, status=False):        
+    def toggle_enable(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+               
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_viewport = status
+                if prefs().debug_output:
+                    print("toggle_enable: ", ob.name, self.button_input)
+
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_viewport = status
                 if prefs().debug_output:
-                    print("toggle: ", collection.name)
+                    print("toggle_enable: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
                 if prefs().debug_output:
-                    print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+                    print("Collection: ", collection.name, "toggle_enable: ", collection.hide_viewport)
 
         return{'FINISHED'}
        
-    def render_viewport(self, status=False):        
+    def render_viewport(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+             
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_render = status
+                if prefs().debug_output:
+                    print("render_viewport: ", ob.name, self.button_input)
+
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
                 collection.hide_render = status
                 if prefs().debug_output:
-                    print("render: ", collection.name)
+                    print("render_viewport: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
