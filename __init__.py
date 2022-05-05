@@ -44,10 +44,30 @@ def find_selected():
 
     print("\n", bpy.context.collection.name)
     for col in bpy.context.collection.children_recursive:
-        print(col.name)
-        
+        print(col.name)        
     for ob in bpy.context.collection.all_objects:
         print(ob.name) 
+
+
+    for collection in bpy.data.collections:        
+        print("\n", collection.name)
+    for obj in collection.objects:
+        print("obj: ", obj.name)    
+    for obj in bpy.context.scene.collection.objects:
+        print("master obj: ", obj.name)
+
+
+    # Set the area to the outliner
+    area = bpy.context.area
+    old_type = area.type 
+    area.type = 'OUTLINER'
+    # some operations
+    ids = bpy.context.selected_ids
+    print(ids)
+    # Reset the area 
+    area.type = old_type   
+
+
 
 class VIEW3D_PT_CM(Panel):    
     bl_label = 'Collection Master'
