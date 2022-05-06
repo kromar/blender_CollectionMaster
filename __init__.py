@@ -80,22 +80,20 @@ class VIEW3D_PT_CM(Panel):
         layout = self.layout 
         settings = context.scene.CM 
         column = layout.column(align=True)
-        column.prop(settings, 'selected_only', text="Only Selected")
+        #column.prop(settings, 'selected_only', text="Only Selected")
 
         box = column.box()
         row = box.row(align=True)
-        row.label(text="Toggle:")  
+        row.label(text="Options:")  
         row.prop(settings, 'item_excluded', text="", icon='CHECKBOX_HLT', invert_checkbox=False)
         row.prop(settings, 'item_select', text="", icon='RESTRICT_SELECT_OFF', invert_checkbox=False)
         row.prop(settings, 'item_visible', text="", icon='HIDE_OFF', invert_checkbox=False)
         row.prop(settings, 'item_enabled', text="", icon='RESTRICT_VIEW_OFF', invert_checkbox=False)
         row.prop(settings, 'item_rendered', text="", icon='RESTRICT_RENDER_OFF', invert_checkbox=False)
 
-        box = column.box()
-        box.label(text="Restore:")        
-        row = box.row(align=True)
-        
-        row.operator(operator="scene.collection_master", text="All", emboss=True, depress=False).button_input='ENABLE_ALL'        
+        box = column.box()      
+        row = box.row(align=True)        
+        row.operator(operator="scene.collection_master", text="Toggle All", emboss=True, depress=False).button_input='ENABLE_ALL'        
                        
         
         #prefix
