@@ -17,15 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 import bpy
-from bpy.types import AddonPreferences, Operator, Panel
-from bpy.props import BoolProperty, StringProperty, EnumProperty
+from bpy.types import AddonPreferences, Operator, Panel, PropertyGroup
+from bpy.props import (EnumProperty, StringProperty, BoolProperty,
+                       PointerProperty)
 
 
 bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 7),
+    "version": (1, 2, 9),
     "blender": (2, 93, 0),
     "location": "View3D > Sidebar > Collection Master",
     "category": "System",
@@ -39,8 +40,36 @@ def prefs():
     user_preferences = bpy.context.preferences
     return user_preferences.addons[__package__].preferences 
  
+def find_selected():
 
-class VIEW3D_PT_CollectionMaster(Panel):    
+    print("\n", bpy.context.collection.name)
+    for col in bpy.context.collection.children_recursive:
+        print(col.name)        
+    for ob in bpy.context.collection.all_objects:
+        print(ob.name) 
+
+
+    for collection in bpy.data.collections:        
+        print("\n", collection.name)
+    for obj in collection.objects:
+        print("obj: ", obj.name)    
+    for obj in bpy.context.scene.collection.objects:
+        print("master obj: ", obj.name)
+
+
+    # Set the area to the outliner
+    area = bpy.context.area
+    old_type = area.type 
+    area.type = 'OUTLINER'
+    # some operations
+    ids = bpy.context.selected_ids
+    print(ids)
+    # Reset the area 
+    area.type = old_type   
+
+
+
+class VIEW3D_PT_CM(Panel):    
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -48,208 +77,299 @@ class VIEW3D_PT_CollectionMaster(Panel):
 
            
     def draw(self, context):             
-        layout = self.layout  
-        column = layout.column(align=True)   
-        #main
-        column.label(text="Restore")
-        row = column.row(align=True)
-        row.operator(operator="scene.collection_master", text="All", emboss=True, depress=False).button_input='ENABLE_ALL' 
-        row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
-        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
-        row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
-        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-        row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
-                
-        
+        layout = self.layout 
+        settings = context.scene.CM 
+        column = layout.column(align=True)
+        #column.prop(settings, 'selected_only', text="Only Selected")
+
+        box = column.box()
+        row = box.row(align=True)
+        row.label(text="Options:")  
+        row.prop(settings, 'item_excluded', text="", icon='CHECKBOX_HLT', invert_checkbox=False)
+        row.prop(settings, 'item_select', text="", icon='RESTRICT_SELECT_OFF', invert_checkbox=False)
+        row.prop(settings, 'item_visible', text="", icon='HIDE_OFF', invert_checkbox=False)
+        row.prop(settings, 'item_enabled', text="", icon='RESTRICT_VIEW_OFF', invert_checkbox=False)
+        row.prop(settings, 'item_rendered', text="", icon='RESTRICT_RENDER_OFF', invert_checkbox=False)
+
+        box = column.box()      
+        row = box.row(align=True)        
+        row.operator(operator="scene.collection_master", text="Toggle All", emboss=True, depress=False).button_input='ENABLE_ALL'        
+                       
         
         #prefix
-        column.label(text="Prefix")        
-        for i in prefs().collection_prefix.replace(",", " ").split():            
-            row = column.row(align=True)
+        box = column.box()
+        box.label(text="Prefix:")        
+        for i in prefs().collection_prefix.replace(",", " ").split():   
+            row = box.row(align=True)
             if not prefs().collection_color == 'NONE':            
                 row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
-                
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
-                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
             else:    
                 row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
-                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
-        
         
         #sufix
-        column.label(text="Suffix")
+        box = column.box()
+        box.label(text="Suffix:")
         for i in prefs().collection_sufix.replace(",", " ").split():            
-            row = column.row(align=True)
+            row = box.row(align=True)
             if not prefs().collection_color == 'NONE':            
                 row.operator(operator="scene.collection_master", text=i, icon='COLLECTION_' + prefs().collection_color, emboss=True, depress=False).button_input=i
-                
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
-                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
             else:    
                 row.operator(operator="scene.collection_master", text=i, icon='OUTLINER_COLLECTION', emboss=True, depress=False).button_input=i
                 
-                row.operator(operator="scene.collection_master", text="", icon='CHECKBOX_HLT').item_excluded
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_SELECT_OFF').item_select
-                row.operator(operator="scene.collection_master", text="", icon='HIDE_OFF').item_visible
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_VIEW_OFF').item_enabled
-                row.operator(operator="scene.collection_master", text="", icon='RESTRICT_RENDER_OFF').item_rendered
 
+class CM_PG_Settings(PropertyGroup):
+    """General Settings and UI data."""
 
-
-class CollectionMaster_OT_run(Operator):
-    bl_idname = "scene.collection_master"
-    bl_label = "collection_master"
-    bl_description = "toggle visibility of physics collections"
-    
-    button_input: StringProperty()
+    selected_only: BoolProperty(
+        name="selected_only",
+        description="selected_only",
+        default=True)  
 
     item_excluded: BoolProperty(
         name="collection_excluded",
         description="collection_excluded",
         default=False)
+    
     item_select: BoolProperty(
         name="collection_select",
         description="collection_select",
         default=False)
+    
     item_visible: BoolProperty(
         name="collection_visible",
         description="collection_visible",
         default=False)
+    
     item_enabled: BoolProperty(
         name="collection_enabled",
         description="collection_enabled",
         default=False)
+    
     item_rendered: BoolProperty(
         name="collection_rendered",
         description="collection_rendered",
         default=False)
 
+        
+    test_item: BoolProperty(
+        name="test_item",
+        description="test_item",
+        default=True)
 
-    def execute(self, context):        
+
+class CM_OT_run(Operator):
+    bl_idname = "scene.collection_master"
+    bl_label = "collection_master"
+    bl_description = "toggle visibility of physics collections"
+    button_input: StringProperty()
+    status: BoolProperty()
+
+    def execute(self, context):   
+        settings = context.scene.CM    
         #print("Collection Master button_input: ", self.button_input)    
         if self.button_input == 'ENABLE_ALL': 
             if prefs().debug_output:
                 print('ENABLE_ALL')
-            state = False
+            #toggle objects
             for ob in bpy.data.objects:
-                ob.hide_set(state)
-                ob.hide_viewport = state
-                ob.hide_select = state
-                ob.hide_render = state
-            
+                if settings.item_select:
+                    ob.hide_select = self.status
+                if settings.item_visible:
+                    ob.hide_set(self.status)
+                if settings.item_enabled:
+                    ob.hide_viewport = self.status                    
+                if settings.item_rendered:
+                    ob.hide_render = self.status
+            #toggle collections
             for coll in bpy.data.collections:
-                coll.hide_viewport = state
-                coll.hide_select = state
-                coll.hide_render = state   
-
+                if settings.item_enabled:
+                    coll.hide_viewport = self.status
+                if settings.item_select:
+                    coll.hide_select = self.status
+                if settings.item_rendered:
+                    coll.hide_render = self.status               
+           
+            #toggle collections
             active_layer = bpy.context.view_layer.name
             vlayer = bpy.context.scene.view_layers[active_layer]
-            for ob in vlayer.objects:            
-                ob.hide_set(state)
-                ob.hide_viewport = state      
+            ##TODO: do we still need this object toggle to toggle ALL?
+            """ for ob in vlayer.objects: 
+                print(ob.name)           
+                if settings.item_visible:
+                    ob.hide_set(self.status)
+                if settings.item_enabled:
+                    ob.hide_viewport = self.status  """     
             
-            for layer in vlayer.layer_collection.children:    
-                layer.exclude = state       
-                layer.hide_viewport = state                
+            #toggle sub collections
+            for layer in vlayer.layer_collection.children:  
+                if settings.item_excluded:  
+                    layer.exclude = self.status       
+                if settings.item_visible:
+                    layer.hide_viewport = self.status                
 
                 def follow_collection(collection):
                     for layer in collection.children: 
-                        layer.exclude = state
-                        layer.hide_viewport = state
+                        if settings.item_excluded:
+                            layer.exclude = self.status
+                        if settings.item_visible:
+                            layer.hide_viewport = self.status
                         if layer.children:
                             follow_collection(layer)
                             
                 if layer.children:
-                    follow_collection(layer)
-       
+                    follow_collection(layer)   
+            if self.status:
+                self.status = False
+            else:
+                self.status = True
+            
         else:
-            if prefs().disable_in_viewport:
-                if self.item_enabled:
-                    self.item_enabled = False
-                else:
-                    self.item_enabled = True  
-                self.toggle_viewport(self.item_enabled)
-                
-            if prefs().render_in_viewport:
-                if self.item_rendered:
-                    self.item_rendered = False
-                else:
-                    self.item_rendered = True  
-                self.render_viewport(self.item_rendered)    
+            if settings.item_excluded: #exclude
+                self.toggle_exclude(self.status) 
             
-            if prefs().select_in_viewport:
-                if self.item_select:
-                    self.item_select = False
-                else:
-                    self.item_select = True  
-                self.select_viewport(self.item_select)    
+            if settings.item_select: #hide_select
+                self.toggle_select(self.status)  
+            
+            if settings.item_visible: #hide_set
+                self.toggle_visibilty(self.status) 
+            
+            if settings.item_enabled: #hide_viewport
+                self.toggle_enable(self.status)  
 
-            if prefs().hide_in_viewport:
-                if self.item_visible:
-                    self.item_visible = False
-                else:
-                    self.item_visible = True  
-                self.toggle_visibilty(self.item_visible)  
-            
-            if prefs().exclude_in_viewport:
-                if self.item_excluded:
-                    self.item_excluded = False
-                else:
-                    self.item_excluded = True  
-                self.exclude_viewport(self.item_excluded)    
+            if settings.item_rendered:
+                self.render_viewport(self.status)  
+
+            if self.status:
+                self.status = False
+            else:
+                self.status = True
 
         return{'FINISHED'}
     
+    def toggle_exclude(self, status=False):           
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+
+        #toggle collections
+        for layer in vlayer.layer_collection.children:    
+            if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
+                print("exclude layer: ", layer.name, layer.exclude)
+                layer.exclude = status
+                if prefs().debug_output:
+                    print("exclude: ", layer.name, self.button_input)   
+            
+            if layer.children:
+                def follow_collection(collection):
+                    for layer in collection.children: 
+                        if layer.name.startswith(self.button_input)or layer.name.endswith(self.button_input):
+                            layer.exclude = status
+                        if layer.children:
+                            if prefs().debug_output:
+                                print("exclude children: ", layer.children)
+                            follow_collection(layer)
+                
+                follow_collection(layer)
+
+        return{'FINISHED'}
+    
+    def toggle_select(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+        
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_select = status
+                if prefs().debug_output:
+                    print("toggle_select: ", ob.name, self.button_input)  
+
+        for collection in bpy.data.collections:  
+            if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
+                collection.hide_select = status
+                if prefs().debug_output:
+                    print("toggle_select: ", collection.name)
+                
+                #change collection icon color
+                if prefs().use_color and prefs().collection_color:
+                    collection.color_tag = prefs().collection_color                
+                if prefs().debug_output:
+                    print("Collection: ", collection.name, "toggle_select: ", collection.hide_select)
+
+        return{'FINISHED'}
+
+    def toggle_visibilty(self, status=False): 
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]   
+
+        #toggle obejcts        
+        for ob in vlayer.objects:            
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
+                ob.hide_set(status)
+                if prefs().debug_output:
+                    print("toggle_visibilty: ", ob.name, self.button_input)
+
+        #toggle collections
+        for layer in vlayer.layer_collection.children:           
+            if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
+                layer.hide_viewport = status
+                if prefs().debug_output:
+                    print("toggle_visibilty: ", layer.name) 
+            
+            if layer.children:
+                def follow_collection(collection):
+                    for layer in collection.children: 
+                        if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
+                            layer.hide_viewport = status
+                        if layer.children:
+                            if prefs().debug_output:
+                                print(layer.children)
+                            follow_collection(layer)                    
+                follow_collection(layer)
+
+        return{'FINISHED'}
       
-    def toggle_viewport(self, state=False):        
+    def toggle_enable(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+               
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_viewport = status
+                if prefs().debug_output:
+                    print("toggle_enable: ", ob.name, self.button_input)
+
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_viewport = state
+                collection.hide_viewport = status
                 if prefs().debug_output:
-                    print("toggle: ", collection.name)
+                    print("toggle_enable: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
                     collection.color_tag = prefs().collection_color                
                 if prefs().debug_output:
-                    print("Collection: ", collection.name, "Hide: ", collection.hide_viewport)
+                    print("Collection: ", collection.name, "toggle_enable: ", collection.hide_viewport)
 
         return{'FINISHED'}
+       
+    def render_viewport(self, status=False):   
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+             
+        #toggle obejcts
+        for ob in vlayer.objects:           
+            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
+                ob.hide_render = status
+                if prefs().debug_output:
+                    print("render_viewport: ", ob.name, self.button_input)
 
-        
-    def select_viewport(self, state=False):        
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_select = state
+                collection.hide_render = status
                 if prefs().debug_output:
-                    print("select: ", collection.name)
-                
-                #change collection icon color
-                if prefs().use_color and prefs().collection_color:
-                    collection.color_tag = prefs().collection_color                
-                if prefs().debug_output:
-                    print("Collection: ", collection.name, "Hide: ", collection.hide_select)
-
-        return{'FINISHED'}
-
-        
-    def render_viewport(self, state=False):        
-        for collection in bpy.data.collections:  
-            if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_render = state
-                if prefs().debug_output:
-                    print("render: ", collection.name)
+                    print("render_viewport: ", collection.name)
                 
                 #change collection icon color
                 if prefs().use_color and prefs().collection_color:
@@ -260,73 +380,10 @@ class CollectionMaster_OT_run(Operator):
         return{'FINISHED'}
 
 
-    def exclude_viewport(self, state=False):           
-        active_layer = bpy.context.view_layer.name
-        vlayer = bpy.context.scene.view_layers[active_layer]
-        
-        print("exclude state:", state)
-        #toggle obejcts
-        for ob in vlayer.objects:            
-            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
-                ob.hide_set(state)
-                if prefs().debug_output:
-                    print("hide: ", ob.name, self.button_input)  
-
-        #toggle collections
-            for layer in vlayer.layer_collection.children:    
-                if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                    layer.exclude = state
-                    if prefs().debug_output:
-                        print("exclude: ", layer.name, self.button_input)   
-                
-                if layer.children:
-                    def follow_collection(collection):
-                        for layer in collection.children: 
-                            if layer.name.startswith(self.button_input)or layer.name.endswith(self.button_input):
-                                layer.exclude = state
-                            if layer.children:
-                                if prefs().debug_output:
-                                    print("exclude children: ", layer.children)
-                                follow_collection(layer)
-                    
-                    follow_collection(layer)
-
-
-        return{'FINISHED'}
-
-
-    def toggle_visibilty(self, state=False):    
-        active_layer = bpy.context.view_layer.name
-        vlayer = bpy.context.scene.view_layers[active_layer]
-        
-        #toggle obejcts
-        for ob in vlayer.objects:            
-            if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
-                ob.hide_set(state)
-
-        #toggle collections
-            for layer in vlayer.layer_collection.children:           
-                if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                    layer.hide_viewport = state
-                    if prefs().debug_output:
-                        print("visibility: ", layer.name) 
-                
-                if layer.children:
-                    def follow_collection(collection):
-                        for layer in collection.children: 
-                            if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                                layer.hide_viewport = state
-                            if layer.children:
-                                if prefs().debug_output:
-                                    print(layer.children)
-                                follow_collection(layer)                    
-                    follow_collection(layer)
-
-        return{'FINISHED'}
 
         
 panels = (
-        VIEW3D_PT_CollectionMaster,
+        VIEW3D_PT_CM,
         )
 
 
@@ -346,7 +403,7 @@ def update_panel(self, context):
         pass
 
 
-class CollectionMasterPreferences(AddonPreferences):
+class CM_Preferences(AddonPreferences):
     #bl_idname = __package__
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
@@ -364,69 +421,37 @@ class CollectionMasterPreferences(AddonPreferences):
         description="collection_prefix", 
         subtype='NONE',
         default="Physics_, BL_",
-        update=VIEW3D_PT_CollectionMaster.draw) 
+        update=VIEW3D_PT_CM.draw) 
         
     collection_sufix: StringProperty(
         name="Sufix", 
         description="collection_sufix", 
         subtype='NONE',
         default="_Physics",
-        update=VIEW3D_PT_CollectionMaster.draw)
+        update=VIEW3D_PT_CM.draw)
         
     debug_output: BoolProperty(
         name="debug_output",
         description="debug_output",
-        default=False)
-        
-    toggle_text: BoolProperty(
-        name="toggle_text",
-        description="toggle_text",
-        default=False)
+        default=False)               
 
     use_color: BoolProperty(
         name="use_color",
         description="change use_color",
         default=True)
-
-
-
-    disable_in_viewport: BoolProperty(
-        name="disable_in_viewport",
-        description="disable_in_viewport",
-        default=False)
         
-    select_in_viewport: BoolProperty(
-        name="select_in_viewport",
-        description="select_in_viewport",
-        default=False)
-
-    render_in_viewport: BoolProperty(
-        name="render_in_viewport",
-        description="render_in_viewport",
-        default=False)
-        
-    hide_in_viewport: BoolProperty(
-        name="hide_in_viewport",
-        description="hide_in_viewport",
-        default=True)        
-        
-    exclude_in_viewport: BoolProperty(
-        name="exclude_in_viewport",
-        description="exclude_in_viewport",
-        default=True)
-    
-
     def list_populate(self, context):
-        colors = [('NONE', '', '', 'OUTLINER_COLLECTION', 0), 
-                    ('COLOR_01', '','', 'COLLECTION_COLOR_01', 1), 
-                    ('COLOR_02', '','', 'COLLECTION_COLOR_02', 2), 
-                    ('COLOR_03', '','', 'COLLECTION_COLOR_03', 3), 
-                    ('COLOR_04', '','', 'COLLECTION_COLOR_04', 4), 
-                    ('COLOR_05', '','', 'COLLECTION_COLOR_05', 5), 
-                    ('COLOR_06', '','', 'COLLECTION_COLOR_06', 6),
-                    ('COLOR_07', '','', 'COLLECTION_COLOR_07', 7), 
-                    ('COLOR_08', '','', 'COLLECTION_COLOR_08', 8), 
-                ]
+        colors = [
+            ('NONE', 'White', '', 'OUTLINER_COLLECTION', 0), 
+            ('COLOR_01', 'Red','', 'COLLECTION_COLOR_01', 1), 
+            ('COLOR_02', 'Orange','', 'COLLECTION_COLOR_02', 2), 
+            ('COLOR_03', 'Yellow','', 'COLLECTION_COLOR_03', 3), 
+            ('COLOR_04', 'Green','', 'COLLECTION_COLOR_04', 4), 
+            ('COLOR_05', 'Blue','', 'COLLECTION_COLOR_05', 5), 
+            ('COLOR_06', 'Purple','', 'COLLECTION_COLOR_06', 6),
+            ('COLOR_07', 'Pink','', 'COLLECTION_COLOR_07', 7), 
+            ('COLOR_08', 'Brown','', 'COLLECTION_COLOR_08', 8), 
+            ]
         return colors
 
     collection_color: EnumProperty(
@@ -437,83 +462,31 @@ class CollectionMasterPreferences(AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = False 
-        row = layout.row(align=True)
-        if self.toggle_text:            
-            if self.exclude_in_viewport:
-                row.prop(self, 'exclude_in_viewport', icon="CHECKBOX_HLT")
-            else: 
-                row.prop(self, 'exclude_in_viewport', icon="CHECKBOX_DEHLT")
-
-            if self.select_in_viewport:
-                row.prop(self, 'select_in_viewport', icon='RESTRICT_SELECT_OFF')
-            else: 
-                row.prop(self, 'select_in_viewport', icon='RESTRICT_SELECT_ON')
-                
-            if self.hide_in_viewport:
-                row.prop(self, 'hide_in_viewport', icon='HIDE_OFF')
-            else:            
-                row.prop(self, 'hide_in_viewport', icon='HIDE_ON')
-
-            if self.disable_in_viewport:
-                row.prop(self, 'disable_in_viewport', icon='RESTRICT_VIEW_OFF')
-            else:
-                row.prop(self, 'disable_in_viewport', icon='RESTRICT_VIEW_ON')
-
-            if self.render_in_viewport:
-                row.prop(self, 'render_in_viewport', icon='RESTRICT_RENDER_OFF')
-            else:            
-                row.prop(self, 'render_in_viewport', icon='RESTRICT_RENDER_ON')
-        
-        else:    
-            if self.exclude_in_viewport:
-                row.prop(self, 'exclude_in_viewport', text='', icon="CHECKBOX_HLT")
-            else: 
-                row.prop(self, 'exclude_in_viewport',  text='', icon="CHECKBOX_DEHLT")
-
-            if self.select_in_viewport:
-                row.prop(self, 'select_in_viewport',  text='', icon='RESTRICT_SELECT_OFF')
-            else: 
-                row.prop(self, 'select_in_viewport',  text='', icon='RESTRICT_SELECT_ON')
-                
-            if self.hide_in_viewport:
-                row.prop(self, 'hide_in_viewport',  text='', icon='HIDE_OFF')
-            else:            
-                row.prop(self, 'hide_in_viewport',  text='', icon='HIDE_ON')
-
-            if self.disable_in_viewport:
-                row.prop(self, 'disable_in_viewport',  text='', icon='RESTRICT_VIEW_OFF')
-            else:
-                row.prop(self, 'disable_in_viewport', text='',  icon='RESTRICT_VIEW_ON')
-
-            if self.render_in_viewport:
-                row.prop(self, 'render_in_viewport',  text='', icon='RESTRICT_RENDER_OFF')
-            else:            
-                row.prop(self, 'render_in_viewport',  text='', icon='RESTRICT_RENDER_ON')
-            
-        layout.prop(self, 'toggle_text')
-
-        layout.prop(self, 'use_color') 
-        layout.prop(self, 'collection_color') 
+        layout.use_property_split = True 
+        layout.prop(self, "category", text="Tab Name") 
+        row = layout.row(align=False)
+        row.prop(self, 'use_color', text="Use Collection Color") 
+        row.prop(self, 'collection_color', text="") 
         layout.prop(self, 'collection_prefix')
         layout.prop(self, 'collection_sufix')
-        layout.prop(self, "category", text="Tab Category")      
-        
         layout.prop(self, 'debug_output') 
 
 
 classes = (
-    CollectionMaster_OT_run,
-    VIEW3D_PT_CollectionMaster,
-    CollectionMasterPreferences,
+    CM_PG_Settings,
+    CM_OT_run,
+    VIEW3D_PT_CM,
+    CM_Preferences,
     )
 
 def register():    
     [bpy.utils.register_class(c) for c in classes]
+    bpy.types.Scene.CM = PointerProperty(type=CM_PG_Settings)
     update_panel(None, bpy.context)
 
 
 def unregister():
+    del bpy.types.Scene.CM
     [bpy.utils.unregister_class(c) for c in classes]
 
 if __name__ == "__main__":
