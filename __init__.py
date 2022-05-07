@@ -40,34 +40,8 @@ def prefs():
     user_preferences = bpy.context.preferences
     return user_preferences.addons[__package__].preferences 
  
-def find_selected():
 
-    print("\n", bpy.context.collection.name)
-    for col in bpy.context.collection.children_recursive:
-        print(col.name)        
-    for ob in bpy.context.collection.all_objects:
-        print(ob.name) 
-
-
-    for collection in bpy.data.collections:        
-        print("\n", collection.name)
-    for obj in collection.objects:
-        print("obj: ", obj.name)    
-    for obj in bpy.context.scene.collection.objects:
-        print("master obj: ", obj.name)
-
-
-    # Set the area to the outliner
-    area = bpy.context.area
-    old_type = area.type 
-    area.type = 'OUTLINER'
-    # some operations
-    ids = bpy.context.selected_ids
-    print(ids)
-    # Reset the area 
-    area.type = old_type   
-
-
+        
 
 class VIEW3D_PT_CM(Panel):    
     bl_label = 'Collection Master'
@@ -80,7 +54,11 @@ class VIEW3D_PT_CM(Panel):
         layout = self.layout 
         settings = context.scene.CM 
         column = layout.column(align=True)
-        #column.prop(settings, 'selected_only', text="Only Selected")
+        row = column.row(align=True)
+        row.prop(settings, 'selected_only', text="Only Selected")
+        if settings.selected_only:      
+            row.operator(operator="scene.collection_master", text="Toggle Selected", emboss=True, depress=False).button_input='SELECTION'        
+                     
 
         box = column.box()
         row = box.row(align=True)
@@ -208,53 +186,101 @@ class CM_OT_run(Operator):
                 if settings.item_visible:
                     layer.hide_viewport = self.status                
 
-                def follow_collection(collection):
-                    for layer in collection.children: 
-                        if settings.item_excluded:
-                            layer.exclude = self.status
-                        if settings.item_visible:
-                            layer.hide_viewport = self.status
-                        if layer.children:
-                            follow_collection(layer)
-                            
-                if layer.children:
-                    follow_collection(layer)   
-            if self.status:
-                self.status = False
-            else:
-                self.status = True
+        elif self.button_input == 'SELECTION':  
+            selected_col, selected_ob = self.find_selected()
+            print("cols: ", selected_col[:], selected_col[:])
             
+
         else:
             if settings.item_excluded: #exclude
-                self.toggle_exclude(self.status) 
-            
+                self.toggle_exclude(self.status)             
             if settings.item_select: #hide_select
-                self.toggle_select(self.status)  
-            
+                self.toggle_select(self.status)              
             if settings.item_visible: #hide_set
-                self.toggle_visibilty(self.status) 
-            
+                self.toggle_visibilty(self.status)             
             if settings.item_enabled: #hide_viewport
-                self.toggle_enable(self.status)  
-
+                self.toggle_enable(self.status) 
             if settings.item_rendered:
                 self.render_viewport(self.status)  
 
-            if self.status:
-                self.status = False
-            else:
-                self.status = True
+        if self.status:
+            self.status = False
+        else:
+            self.status = True
 
         return{'FINISHED'}
     
-    def toggle_exclude(self, status=False):           
+
+    def find_selected(self):
+        selected_col = []
+        selected_ob = []
+        for collection in bpy.data.collections:  
+            for obj in collection.objects:
+                if obj.select_get():    
+                    selected_col.append(collection)  
+                    selected_ob.append(obj)     
+        return selected_col, selected_ob
+
+    
+    def toggle_all(self, context, status):
+        settings = context.scene.CM   
+        #toggle objects
+        for ob in bpy.data.objects:
+            if settings.item_select:
+                ob.hide_select = self.status
+            if settings.item_visible:
+                ob.hide_set(self.status)
+            if settings.item_enabled:
+                ob.hide_viewport = self.status                    
+            if settings.item_rendered:
+                ob.hide_render = self.status
+                
+        #toggle collections
+        for coll in bpy.data.collections:
+            if settings.item_enabled:
+                coll.hide_viewport = self.status
+            if settings.item_select:
+                coll.hide_select = self.status
+            if settings.item_rendered:
+                coll.hide_render = self.status               
+        
+        #toggle collections
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer]
+        ##TODO: do we still need this object toggle to toggle ALL?
+        """ for ob in vlayer.objects: 
+            print(ob.name)           
+            if settings.item_visible:
+                ob.hide_set(self.status)
+            if settings.item_enabled:
+                ob.hide_viewport = self.status  """     
+        
+        #toggle sub collections
+        for layer in vlayer.layer_collection.children:  
+            if settings.item_excluded:  
+                layer.exclude = self.status       
+            if settings.item_visible:
+                layer.hide_viewport = self.status                
+
+            def follow_collection(collection):
+                for layer in collection.children: 
+                    if settings.item_excluded:
+                        layer.exclude = self.status
+                    if settings.item_visible:
+                        layer.hide_viewport = self.status
+                    if layer.children:
+                        follow_collection(layer)
+                        
+            if layer.children:
+                follow_collection(layer) 
+
+    def toggle_exclude(self, status):           
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
 
         #toggle collections
         for layer in vlayer.layer_collection.children:    
             if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                print("exclude layer: ", layer.name, layer.exclude)
                 layer.exclude = status
                 if prefs().debug_output:
                     print("exclude: ", layer.name, self.button_input)   
@@ -273,7 +299,8 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
     
-    def toggle_select(self, status=False):   
+
+    def toggle_select(self, status):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
         
@@ -298,7 +325,8 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
 
-    def toggle_visibilty(self, status=False): 
+
+    def toggle_visibilty(self, status): 
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]   
 
@@ -329,7 +357,8 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
       
-    def toggle_enable(self, status=False):   
+
+    def toggle_enable(self, status):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
                
@@ -354,7 +383,8 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
        
-    def render_viewport(self, status=False):   
+
+    def render_viewport(self, status):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
              
@@ -379,13 +409,10 @@ class CM_OT_run(Operator):
 
         return{'FINISHED'}
 
-
-
         
 panels = (
-        VIEW3D_PT_CM,
-        )
-
+    VIEW3D_PT_CM,
+    )
 
 def update_panel(self, context):
     message = ": Updating Panel locations has failed"
