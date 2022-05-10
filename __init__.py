@@ -54,11 +54,7 @@ class VIEW3D_PT_CM(Panel):
         layout = self.layout 
         settings = context.scene.CM 
         column = layout.column(align=True)
-        row = column.row(align=True)
-        row.prop(settings, 'selected_only', text="Only Selected")
-        if settings.selected_only:      
-            row.operator(operator="scene.collection_master", text="Toggle Selected", emboss=True, depress=False).button_input='SELECTION'        
-                     
+        #row.prop(settings, 'selected_only', text="Only Selected")             
 
         box = column.box()
         row = box.row(align=True)
@@ -70,9 +66,10 @@ class VIEW3D_PT_CM(Panel):
         row.prop(settings, 'item_rendered', text="", icon='RESTRICT_RENDER_OFF', invert_checkbox=False)
 
         box = column.box()      
-        row = box.row(align=True)        
+        row = box.row(align=True)  
         row.operator(operator="scene.collection_master", text="Toggle All", emboss=True, depress=False).button_input='ENABLE_ALL'        
-                       
+        row.operator(operator="scene.collection_master", text="Toggle Selected", emboss=True, depress=False).button_input='SELECTION'        
+             
         
         #prefix
         box = column.box()
@@ -188,20 +185,20 @@ class CM_OT_run(Operator):
 
         elif self.button_input == 'SELECTION':  
             selected_col, selected_ob = self.find_selected()
-            print("cols: ", selected_col[:], selected_col[:])
-            
+            print("selected: ", selected_col[:], selected_col[:])   
+            self.toggle_selected(context, selected_col, selected_ob)         
 
         else:
             if settings.item_excluded: #exclude
-                self.toggle_exclude(self.status)             
+                self.toggle_exclude()             
             if settings.item_select: #hide_select
-                self.toggle_select(self.status)              
+                self.toggle_select()              
             if settings.item_visible: #hide_set
-                self.toggle_visibilty(self.status)             
+                self.toggle_visibilty()             
             if settings.item_enabled: #hide_viewport
-                self.toggle_enable(self.status) 
+                self.toggle_enable() 
             if settings.item_rendered:
-                self.render_viewport(self.status)  
+                self.render_viewport()  
 
         if self.status:
             self.status = False
@@ -217,12 +214,60 @@ class CM_OT_run(Operator):
         for collection in bpy.data.collections:  
             for obj in collection.objects:
                 if obj.select_get():    
-                    selected_col.append(collection)  
-                    selected_ob.append(obj)     
+                    selected_col.append(collection.name)  
+                    selected_ob.append(obj.name)     
         return selected_col, selected_ob
 
+
+    def toggle_selected(self, context, selected_col, selected_ob):
+        settings = context.scene.CM 
+       
+        #toggle objects
+        for ob in bpy.data.objects:
+            if ob.name in selected_ob:
+
+                if settings.item_select:
+                    ob.hide_select = self.status
+                if settings.item_visible:
+                    ob.hide_set(self.status)
+                if settings.item_enabled:
+                    ob.hide_viewport = self.status                    
+                if settings.item_rendered:
+                    ob.hide_render = self.status
+                
+        """ #toggle collections
+        for coll in bpy.data.collections:
+            if settings.item_enabled:
+                coll.hide_viewport = self.status
+            if settings.item_select:
+                coll.hide_select = self.status
+            if settings.item_rendered:
+                coll.hide_render = self.status               
+        
+        #toggle collections
+        active_layer = bpy.context.view_layer.name
+        vlayer = bpy.context.scene.view_layers[active_layer] 
+
+        for layer in vlayer.layer_collection.children:  
+            if settings.item_excluded:  
+                layer.exclude = self.status       
+            if settings.item_visible:
+                layer.hide_viewport = self.status                
+
+            def follow_collection(collection):
+                for layer in collection.children: 
+                    if settings.item_excluded:
+                        layer.exclude = self.status
+                    if settings.item_visible:
+                        layer.hide_viewport = self.status
+                    if layer.children:
+                        follow_collection(layer)
+                        
+            if layer.children:
+                follow_collection(layer)  """
+
     
-    def toggle_all(self, context, status):
+    def toggle_all(self, context):
         settings = context.scene.CM   
         #toggle objects
         for ob in bpy.data.objects:
@@ -274,14 +319,14 @@ class CM_OT_run(Operator):
             if layer.children:
                 follow_collection(layer) 
 
-    def toggle_exclude(self, status):           
+    def toggle_exclude(self):           
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
 
         #toggle collections
         for layer in vlayer.layer_collection.children:    
             if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                layer.exclude = status
+                layer.exclude = self.status
                 if prefs().debug_output:
                     print("exclude: ", layer.name, self.button_input)   
             
@@ -289,7 +334,7 @@ class CM_OT_run(Operator):
                 def follow_collection(collection):
                     for layer in collection.children: 
                         if layer.name.startswith(self.button_input)or layer.name.endswith(self.button_input):
-                            layer.exclude = status
+                            layer.exclude = self.status
                         if layer.children:
                             if prefs().debug_output:
                                 print("exclude children: ", layer.children)
@@ -300,20 +345,20 @@ class CM_OT_run(Operator):
         return{'FINISHED'}
     
 
-    def toggle_select(self, status):   
+    def toggle_select(self):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
         
         #toggle obejcts
         for ob in vlayer.objects:           
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
-                ob.hide_select = status
+                ob.hide_select = self.status
                 if prefs().debug_output:
                     print("toggle_select: ", ob.name, self.button_input)  
 
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_select = status
+                collection.hide_select = self.status
                 if prefs().debug_output:
                     print("toggle_select: ", collection.name)
                 
@@ -326,21 +371,21 @@ class CM_OT_run(Operator):
         return{'FINISHED'}
 
 
-    def toggle_visibilty(self, status): 
+    def toggle_visibilty(self): 
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]   
 
         #toggle obejcts        
         for ob in vlayer.objects:            
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):
-                ob.hide_set(status)
+                ob.hide_set(self.status)
                 if prefs().debug_output:
                     print("toggle_visibilty: ", ob.name, self.button_input)
 
         #toggle collections
         for layer in vlayer.layer_collection.children:           
             if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                layer.hide_viewport = status
+                layer.hide_viewport = self.status
                 if prefs().debug_output:
                     print("toggle_visibilty: ", layer.name) 
             
@@ -348,30 +393,30 @@ class CM_OT_run(Operator):
                 def follow_collection(collection):
                     for layer in collection.children: 
                         if layer.name.startswith(self.button_input) or layer.name.endswith(self.button_input):
-                            layer.hide_viewport = status
+                            layer.hide_viewport = self.status
                         if layer.children:
+                            follow_collection(layer) 
                             if prefs().debug_output:
-                                print(layer.children)
-                            follow_collection(layer)                    
+                                print(layer.children)                   
                 follow_collection(layer)
 
         return{'FINISHED'}
       
 
-    def toggle_enable(self, status):   
+    def toggle_enable(self):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
                
         #toggle obejcts
         for ob in vlayer.objects:           
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
-                ob.hide_viewport = status
+                ob.hide_viewport = self.status
                 if prefs().debug_output:
                     print("toggle_enable: ", ob.name, self.button_input)
 
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_viewport = status
+                collection.hide_viewport = self.status
                 if prefs().debug_output:
                     print("toggle_enable: ", collection.name)
                 
@@ -384,20 +429,20 @@ class CM_OT_run(Operator):
         return{'FINISHED'}
        
 
-    def render_viewport(self, status):   
+    def render_viewport(self):   
         active_layer = bpy.context.view_layer.name
         vlayer = bpy.context.scene.view_layers[active_layer]
              
         #toggle obejcts
         for ob in vlayer.objects:           
             if ob.name.startswith(self.button_input) or ob.name.endswith(self.button_input):                                                   
-                ob.hide_render = status
+                ob.hide_render = self.status
                 if prefs().debug_output:
                     print("render_viewport: ", ob.name, self.button_input)
 
         for collection in bpy.data.collections:  
             if collection.name.startswith(self.button_input) or collection.name.endswith(self.button_input):
-                collection.hide_render = status
+                collection.hide_render = self.status
                 if prefs().debug_output:
                     print("render_viewport: ", collection.name)
                 
