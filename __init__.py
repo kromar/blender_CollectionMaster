@@ -172,7 +172,7 @@ class CM_OT_run(Operator):
             if prefs().debug_output:
                 print('ENABLE_ALL')
             #toggle objects
-            for ob in bpy.data.objects:
+            for ob in  bpy.context.scene.objects:
                 if settings.item_select:
                     ob.hide_select = self.status
                 if settings.item_visible:
