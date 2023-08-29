@@ -26,9 +26,9 @@ bl_info = {
     "name": "Collection Master",
     "description": "show hide collection",
     "author": "Daniel Grauer",
-    "version": (1, 2, 9),
+    "version": (1, 3, 0),
     "blender": (2, 93, 0),
-    "location": "View3D > Sidebar > Collection Master",
+    "location": "View3D > Sidebar > CM",
     "category": "System",
     "wiki_url": "https://github.com/kromar/blender_CollectionMaster",
     "tracker_url": "https://github.com/kromar/blender_CollectionMaster/issues",
@@ -73,7 +73,7 @@ class VIEW3D_PT_CM(Panel):
     bl_label = 'Collection Master'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Collection Master'
+    bl_category = 'CM'
 
            
     def draw(self, context):             
@@ -412,7 +412,7 @@ class CM_Preferences(AddonPreferences):
     category: StringProperty(
             name="Tab Category",
             description="Choose a name for the category of the panel",
-            default="Collection Master",
+            default="CM",
             update=update_panel
             )
 
